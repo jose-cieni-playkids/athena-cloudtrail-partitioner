@@ -7,6 +7,9 @@ Parameters:
   S3BucketName:
     Type: String
     Description: The name of the bucket containing your CloudTrail logs
+  S3PathPrefix:
+    Type: String
+    Description: The path prefix of the bucket containing your CloudTrail logs (omit if your trail is setup at the root of the bucket)
   CodeS3BucketName:
     Type: String
     Description: The name of the bucket containing the Lambda code
@@ -54,7 +57,9 @@ Resources:
               - ""
               - - "s3://"
                 - !Ref "S3BucketName"
-                - "/AWSLogs/"
+                - "/"
+                - !Ref "S3PathPrefix"
+                - "AWSLogs/"
                 - !Ref OrganizationId
           Columns:
             -
@@ -173,7 +178,7 @@ Resources:
                 Effect: "Allow"
                 Action:
                   - "s3:GetObject"
-                Resource: !Sub "arn:aws:s3:::${S3BucketName}/AWSLogs/${OrganizationId}/*"
+                Resource: !Sub "arn:aws:s3:::${S3BucketName}/${S3PathPrefix}AWSLogs/${OrganizationId}/*"
         -
           PolicyName: "glue_access_policy"
           PolicyDocument:
@@ -229,6 +234,7 @@ Resources:
       Environment:
         Variables:
           BUCKET_NAME: !Ref S3BucketName
+          PATH_PREFIX: !Ref S3PathPrefix
           ORGANIZATION_ID: !Ref OrganizationId
       Handler: "dist/handler.handler"
       MemorySize: 1024
@@ -254,3 +260,12 @@ Resources:
             Fn::GetAtt:
               - PartitionLambda
               - Arn
+
+  ## Permissions for CloudWatch Events to invoke the Lambda function
+  PartitionLambdaPolicy:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref PartitionLambda
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt LambdaSchedule.Arn

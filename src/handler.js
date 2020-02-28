@@ -12,8 +12,8 @@ import { createAllPartitions } from './partition';
 */
 export const handler = async () => {
   // console.log('Received event:', JSON.stringify(event, null, 2));
-  const { BUCKET_NAME: bucket, ORGANIZATION_ID: orgId } = process.env;
-  const path = orgId ? `AWSLogs/${orgId}/` : 'AWSLogs/';
+  const { BUCKET_NAME: bucket, ORGANIZATION_ID: orgId, PATH_PREFIX: pathPrefix } = process.env;
+  const path = orgId ? `${pathPrefix}AWSLogs/${orgId}/` : `${pathPrefix}AWSLogs/`;
   const partitionTree = await getAllParitions(bucket, path);
   console.log(JSON.stringify(partitionTree));
   const partitions = await constructNewPartitionKeySetsFromTree(partitionTree);
